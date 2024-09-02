@@ -1,0 +1,6 @@
+com\springB\projectSpring\ProjectSpringApplication.class
+com\springB\projectSpring\student\StudentRepository.class
+com\springB\projectSpring\student\StudentConfig.class
+com\springB\projectSpring\student\Student.class
+com\springB\projectSpring\student\StudentService.class
+com\springB\projectSpring\student\StudentController.class
