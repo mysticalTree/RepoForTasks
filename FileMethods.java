@@ -20,7 +20,7 @@ import java.util.Date;
 public class FileMethods {
 
     public static void main(String[] args) throws IOException {
-//        create("C://Direct//emails.txt");
+//        create("C://Direct//Books.txt");
 //        read("C://Direct//notes.txt");
 //        copy("C://Direct//notes.txt", "C://Direct//notes_copy.txt");
 //        cloned("C://Direct//notes.txt", "C://Direct//notes_clone.txt");
@@ -34,14 +34,11 @@ public class FileMethods {
 class FileUtils {
 
     /**
-     * Читает содержимое файла построчно и выводит его в консоль.
+     * Читает содержимое файла построчно и выводит его в консоль. Если файл не
+     * найден или возникли ошибки при чтении, выводится соответствующее
+     * сообщение.
      *
      * @param path путь к файлу для чтения
-     *
-     * Метод открывает файл по указанному пути и считывает его построчно. Если
-     * файл не найден или возникли ошибки при чтении, выводится соответствующее
-     * сообщение. Закрытие потока происходит автоматически с помощью
-     * try-with-resources.
      */
     public static void read(String path) {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(path))) {
@@ -57,18 +54,12 @@ class FileUtils {
     }
 
     /**
-     * Создает новый файл по указанному пути. Если файл уже существует, то
-     * создается его резервная копия с таким же содержимым. Старый файл
-     * удаляется перед созданием нового.
+     * Создает новый файл по указанному пути. Если файл с таким именем уже
+     * существует, то создается его резервная копия (с помощью перегруженного
+     * метода cloned). Если возникли ошибки при создании файла, выводится
+     * соответствующее сообщение.
      *
      * @param path путь к файлу, который нужно создать
-     *
-     * Метод сначала проверяет, существует ли файл. Если файл существует, то
-     * создается его резервная копия с суффиксом "_copy". Содержимое копируется
-     * с помощью буферного чтения и записи. После создания резервной копии,
-     * старый файл удаляется, а затем создается новый файл с исходным именем. В
-     * случае возникновения ошибок (например, невозможности создать файл или
-     * резервную копию) выводится соответствующее сообщение.
      */
     public static void create(String path) {
         File file = new File(path);
@@ -76,39 +67,25 @@ class FileUtils {
 
         if (file.exists()) {
             System.out.println("Файл " + file.getName() + " уже существует. Создание резервной копии...");
-
-            try (FileInputStream inStream = new FileInputStream(file); FileOutputStream outStream = new FileOutputStream(backupFile)) {
-
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = inStream.read(buffer)) > 0) {
-                    outStream.write(buffer, 0, length);
-                }
-                System.out.println("Резервная копия успешно создана: " + backupFile.getName());
+            cloned(file, backupFile);
+        } else {
+            try {
+                System.out.println(file.createNewFile() ? "Файл " + file.getName() + " успешно создан" : "Не удалось создать файл " + file.getName());
             } catch (IOException ex) {
-                System.out.println("Ошибка при создании резервной копии: " + ex.getMessage());
+                System.out.println("Ошибка создания файла: " + ex.getMessage());
             }
-            System.out.println(file.delete() ? "Старый файл " + file.getName() + " удален." : "Не удалось удалить старый файл " + file.getName());
-        }
-
-        try {
-            System.out.println(file.createNewFile() ? "Файл " + file.getName() + " успешно создан" : "Не удалось создать файл " + file.getName());
-        } catch (IOException ex) {
-            System.out.println("Ошибка создания файла: " + ex.getMessage());
         }
     }
 
     /**
      * Копирует файл из одного пути в другой с проверкой существования файлов и
-     * дополнительной обработкой.
+     * дополнительной обработкой. Метод проверяет, существует ли исходный файл и
+     * доступен ли для чтения. Также проверяется, можно ли записать файл в
+     * указанное место назначения.
      *
-     * @param sourcePath путь к исходному файлу для копирования
-     * @param destinationPath путь, куда нужно скопировать файл
-     *
-     * Метод проверяет, существует ли исходный файл и доступен ли для чтения.
-     * Также проверяется, можно ли записать файл в указанное место назначения.
-     *
-     * @throws IOException Если возникает ошибка при работе с файлами.
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу, в который будет скопировано
+     * содержимое исходного
      */
     public static void copy(String sourcePath, String destinationPath) {
         Path src = Paths.get(sourcePath);
@@ -134,30 +111,21 @@ class FileUtils {
             System.out.println("Файл успешно скопирован: " + destinationPath);
 
         } catch (IOException ex) {
-            System.out.println("Ошибка при копировании файла.");
+            System.out.println("Ошибка при копировании файла: " + ex.getMessage());
         }
     }
 
     /**
      * Клонирует содержимое исходного файла в новый файл и добавляет метку
-     * времени в начале содержимого.
+     * времени в формате "yyyy-MM-dd HH:mm:ss". Если возникли ошибки при
+     * клонировании файла, выводится соответствующее сообщение.
      *
-     * @param sourcePath путь к исходному файлу, который нужно клонировать
-     * @param destinationPath путь к новому файлу, куда будет скопировано
-     * содержимое
-     *
-     * Метод использует поток ввода-вывода для копирования содержимого исходного
-     * файла. В начало нового файла добавляется строка с текущей датой и
-     * временем клонирования в формате "yyyy-MM-dd HH:mm:ss".
-     *
-     * @throws IOException Если возникает ошибка ввода-вывода при работе с
-     * файлами.
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу, в который будет склонировано
+     * содержимое исходного
      */
     public static void cloned(String sourcePath, String destinationPath) {
-        Path src = Paths.get(sourcePath);
-        Path dst = Paths.get(destinationPath);
-
-        try (FileInputStream inStream = new FileInputStream(src.toFile()); FileOutputStream outStream = new FileOutputStream(dst.toFile())) {
+        try (FileInputStream inStream = new FileInputStream(sourcePath); FileOutputStream outStream = new FileOutputStream(destinationPath)) {
             String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
             String header = "Клонирован: " + timestamp + System.lineSeparator();
             outStream.write(header.getBytes());
@@ -167,20 +135,41 @@ class FileUtils {
             while ((length = inStream.read(buffer)) > 0) {
                 outStream.write(buffer, 0, length);
             }
-            System.out.println("Файл успешно клонирован с добавлением метки времени в содержимое");
+            System.out.println("Файл успешно клонирован с добавлением метки времени.");
         } catch (IOException ex) {
-            System.out.println("Ошибка при клонировании файла");
+            System.out.println("Ошибка при клонировании файла: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Перегруженный метод cloned, используемый в методе create для создания
+     * резервной копии. Если возникли ошибки при создании резервной копии,
+     * выводится соответствующее сообщение.
+     *
+     * @param sourceFile путь к исходному файлу
+     * @param backupFile путь к резервному файлу, в который будет скопировано
+     * содержимое исходного
+     */
+    public static void cloned(File sourceFile, File backupFile) {
+        try (FileInputStream inStream = new FileInputStream(sourceFile); FileOutputStream outStream = new FileOutputStream(backupFile)) {
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inStream.read(buffer)) > 0) {
+                outStream.write(buffer, 0, length);
+            }
+            System.out.println("Создана резервная копия: " + backupFile.getName());
+        } catch (IOException ex) {
+            System.out.println("Ошибка при создании резервной копии: " + ex.getMessage());
         }
     }
 
     /**
      * Метод для поиска и подсчета количества вхождений заданного символа в
-     * файле.
+     * файле. Если возникли ошибки во время подсчета символов в файле, выводится
+     * соответствующее сообщение.
      *
-     * @param sourcePath путь к исходному файлу.
-     * @param searchChar символ для поиска.
-     * @throws IOException Если возникает ошибка ввода-вывода при работе с
-     * файлами.
+     * @param sourcePath путь к исходному файлу
+     * @param searchChar символ для поиска
      */
     public static void searchSymbol(String sourcePath, char searchChar) {
         int count = 0;
@@ -195,23 +184,23 @@ class FileUtils {
                 }
             }
             System.out.println("Символ " + searchChar + " найден " + count + " раз(а)");
-        } catch (FileNotFoundException e) {
-            System.out.println("Файл не найден: " + sourcePath);
-        } catch (IOException e) {
-            System.out.println("Ошибка при поиске символа в файле: " + sourcePath);
+        } catch (FileNotFoundException ex) {
+            System.out.println("Файл " + sourcePath + " не найден. ");
+        } catch (IOException ex) {
+            System.out.println("Ошибка при поиске символа в файле: " + ex.getMessage());
         }
     }
 
     /**
      * Запись в файл осуществляется из консоли, чтение происходит построчно.
-     * Остановка записи происходит при вводе ключевого слова "ESC".
+     * Остановка записи происходит при вводе ключевого слова "ESC". Файл
+     * перезаписывается при каждом вызове. Если возникли ошибки при записи в
+     * файл, выводится соответствующее сообщение.
      *
-     * @param sourcepath Путь к исходному файлу, в который нужно записывать.
-     * @throws IOException Если возникает ошибка ввода-вывода при работе с
-     * файлами.
+     * @param sourcepath путь к исходному файлу для записи
      */
-    public static void write(String sourcepath) {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); BufferedWriter bw = new BufferedWriter(new FileWriter(sourcepath))) {
+    public static void write(String sourcePath) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(System.in)); BufferedWriter bw = new BufferedWriter(new FileWriter(sourcePath))) {
             String text;
             while (!(text = br.readLine()).equals("ESC")) {
 
@@ -220,31 +209,24 @@ class FileUtils {
             }
         } catch (IOException ex) {
 
-            System.out.println(ex.getMessage());
+            System.out.println("Ошибка при записи в файл: " + ex.getMessage());
         }
     }
 
     /**
      * Шифрует содержимое файла с использованием шифра Виженера и сохраняет
-     * зашифрованный текст в новый файл. После этого расшифровывает
-     * зашифрованный текст и записывает его в тот же файл на следующей строке.
+     * текст в новый файл. Если возникли ошибки при шифровании, выводится
+     * соответствующее сообщение.
      *
-     * @param sourcePath Путь к исходному файлу, который нужно зашифровать.
-     * @param destinationPath Путь к файлу, в который будет сохранен
-     * зашифрованный и расшифрованный текст.
-     * @param key Ключ шифрования для шифра Виженера.
-     *
-     * @throws IOException Если возникает ошибка ввода-вывода при работе с
-     * файлами.
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу для сохранения зашифрованного текста
+     * @param key ключ шифрования
      */
     public static void encryptVigenere(String sourcePath, String destinationPath, String key) {
-        Path src = Paths.get(sourcePath);
-        Path dst = Paths.get(destinationPath);
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(src.toFile())); FileOutputStream outStream = new FileOutputStream(dst.toFile())) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath)); BufferedWriter writer = new BufferedWriter(new FileWriter(destinationPath))) {
 
             StringBuilder encryptedText = new StringBuilder();
-            StringBuilder decryptedText = new StringBuilder();
             String line;
             int keyIndex = 0;
 
@@ -257,42 +239,70 @@ class FileUtils {
                         char encryptedChar = (char) ((c - base + shift) % 26 + base);
                         encryptedText.append(encryptedChar);
 
-                        char decryptedChar = (char) ((encryptedChar - base - shift + 26) % 26 + base);
-                        decryptedText.append(decryptedChar);
-
                         keyIndex++;
                     } else {
                         encryptedText.append(c);
-                        decryptedText.append(c);
                     }
                 }
                 encryptedText.append(System.lineSeparator());
-                decryptedText.append(System.lineSeparator());
             }
-            outStream.write(encryptedText.toString().getBytes());
-            outStream.write(decryptedText.toString().getBytes());
-            System.out.println("Файл успешно зашифрован и расшифрован с использованием шифра Виженера");
+            writer.write(encryptedText.toString());
+            System.out.println("Текст успешно зашифрован и сохранен в " + destinationPath);
 
         } catch (IOException ex) {
-            System.out.println("Ошибка при шифровании файла");
+            System.out.println("Ошибка при шифровании содержимого файла: " + ex.getMessage());
         }
     }
 
     /**
-     * Считает слова в текстовом документе. С помощью word.matches проверяется,
-     * что слово содержит только буквы, или слово только с одним знаком
-     * препинания в конце.
+     * Расшифровывает содержимое файла с использованием шифра Виженера и
+     * сохраняет текст в новый файл. Если возникли ошибки при расшифровке,
+     * выводится соответствующее сообщение.
      *
-     * @param sourcePath Путь к исходному файлу, слова в котором надо
-     * подсчитать.
-     * @throws IOException Если возникает ошибка ввода-вывода при работе с
-     * файлами.
+     * @param sourcePath Путь к исходному файлу
+     * @param destinationPath Путь к файлу для сохранения расшифрованного текста
+     * @param key Ключ расшифровки
+     */
+    public static void decryptVigenere(String sourcePath, String destinationPath, String key) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath)); BufferedWriter writer = new BufferedWriter(new FileWriter(destinationPath))) {
+            StringBuilder decryptedText = new StringBuilder();
+            String line;
+            int keyIndex = 0;
+            while ((line = reader.readLine()) != null) {
+                for (char c : line.toCharArray()) {
+                    if (Character.isLetter(c)) {
+                        char base = Character.isUpperCase(c) ? 'A' : 'a';
+                        char keyChar = key.charAt(keyIndex % key.length());
+                        int shift = Character.isUpperCase(keyChar) ? keyChar - 'A' : keyChar - 'a';
+                        char decryptedChar = (char) ((c - base - shift + 26) % 26 + base);
+                        decryptedText.append(decryptedChar);
+                        keyIndex++;
+                    } else {
+                        decryptedText.append(c);
+                    }
+                }
+                decryptedText.append(System.lineSeparator());
+            }
+            writer.write(decryptedText.toString());
+            System.out.println("Текст успешно расшифрован и сохранен в " + destinationPath);
+        } catch (IOException ex) {
+            System.out.println("Ошибка при расшифровке содержимого файла: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Считает слова в файле. Также проверяется, что слово содержит только
+     * буквы, или слово только с одним знаком препинания в конце. Также
+     * подсчитывает слова, например: "квартира/дом" или "вот-вот". Если возникли
+     * ошибки при подсчете слов, выводится соответствующее сообщение.
+     *
+     * @param sourcePath путь к файлу, слова в котором надо подсчитать
      */
     public static void countWords(String sourcePath) {
-        Path src = Paths.get(sourcePath);
+
         int wordCount = 0;
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(src.toFile()))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath))) {
             String line;
 
             while ((line = reader.readLine()) != null) {
@@ -304,7 +314,7 @@ class FileUtils {
                         continue;
                     }
 
-                    if (word.matches("[a-zA-Zа-яА-Я]+[.,!?;:]?")) {
+                    if (word.matches("[a-zA-Zа-яА-Я]+([-/][a-zA-Zа-яА-Я]+)*[.,!?;:]?")) {
                         wordCount++;
                     }
                 }
