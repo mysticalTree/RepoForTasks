@@ -1,6 +1,8 @@
 package Files;
 
 import static Files.FileUtils.*;
+import Files.VigenereFactory.Alphabet;
+import Files.VigenereFactory.AlphabetFactory;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -20,14 +22,20 @@ import java.util.Date;
 public class FileMethods {
 
     public static void main(String[] args) throws IOException {
-//        create("C://Direct//Books.txt");
+        //create("C://Direct//Books.txt");
 //        read("C://Direct//notes.txt");
-//        copy("C://Direct//notes.txt", "C://Direct//notes_copy.txt");
-//        cloned("C://Direct//notes.txt", "C://Direct//notes_clone.txt");
+        //copy("C://Direct//notes.txt", "C://Direct//notes_copy.txt");
+        //cloned("C://Direct//notes.txt", "C://Direct//notes_clone.txt");
 //        searchSymbol("C://Direct//notes.txt", 'H');
 //        write("C://Direct//notes.txt");
-//        encryptVigenere("C://Direct//notes.txt", "C://Direct//notes_encrypted.txt", "keyword");
 //        countWords("C://Direct//emails.txt");
+        //Alphabet englishAlphabet = AlphabetFactory.createAlphabet("english");
+        //encryptVigenere("C://Direct//en_vigenere.txt", "C://Direct//en_encrypted.txt", "keyword", englishAlphabet);
+        //decryptVigenere("C://Direct//en_encrypted.txt", "C://Direct//en_decrypted.txt", "keyword", englishAlphabet);
+
+        //Alphabet russianAlphabetWithYo = AlphabetFactory.createRussianAlphabet(true);
+        //encryptVigenere("C://Direct//ru_vigenere.txt", "C://Direct//ru_encrypted.txt", "жижа", russianAlphabetWithYo);
+        //decryptVigenere("C://Direct//ru_encrypted.txt", "C://Direct//ru_decrypted.txt", "жижа", russianAlphabetWithYo);
     }
 }
 
@@ -101,13 +109,7 @@ class FileUtils {
         }
 
         try (FileInputStream inStream = new FileInputStream(src.toFile()); FileOutputStream outStream = new FileOutputStream(dst.toFile())) {
-
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inStream.read(buffer)) > 0) {
-                outStream.write(buffer, 0, length);
-            }
-
+            copyFileContents(inStream, outStream);
             System.out.println("Файл успешно скопирован: " + destinationPath);
 
         } catch (IOException ex) {
@@ -130,11 +132,7 @@ class FileUtils {
             String header = "Клонирован: " + timestamp + System.lineSeparator();
             outStream.write(header.getBytes());
 
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inStream.read(buffer)) > 0) {
-                outStream.write(buffer, 0, length);
-            }
+            copyFileContents(inStream, outStream);
             System.out.println("Файл успешно клонирован с добавлением метки времени.");
         } catch (IOException ex) {
             System.out.println("Ошибка при клонировании файла: " + ex.getMessage());
@@ -152,14 +150,30 @@ class FileUtils {
      */
     public static void cloned(File sourceFile, File backupFile) {
         try (FileInputStream inStream = new FileInputStream(sourceFile); FileOutputStream outStream = new FileOutputStream(backupFile)) {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = inStream.read(buffer)) > 0) {
-                outStream.write(buffer, 0, length);
-            }
+            copyFileContents(inStream, outStream);
             System.out.println("Создана резервная копия: " + backupFile.getName());
         } catch (IOException ex) {
             System.out.println("Ошибка при создании резервной копии: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Общий метод для копирования содержимого из входного потока в выходной.
+     * Если возникли ошибки при работе метода, выводится соответствующее
+     * сообщение.
+     *
+     * @param inStream входной поток файла
+     * @param outStream выходной поток файла
+     */
+    private static void copyFileContents(FileInputStream inStream, FileOutputStream outStream) {
+        byte[] buffer = new byte[1024];
+        int length;
+        try {
+            while ((length = inStream.read(buffer)) > 0) {
+                outStream.write(buffer, 0, length);
+            }
+        } catch (IOException ex) {
+            System.out.println("Ошибка при копировании содержимого файла: " + ex.getMessage());
         }
     }
 
@@ -214,87 +228,11 @@ class FileUtils {
     }
 
     /**
-     * Шифрует содержимое файла с использованием шифра Виженера и сохраняет
-     * текст в новый файл. Если возникли ошибки при шифровании, выводится
-     * соответствующее сообщение.
-     *
-     * @param sourcePath путь к исходному файлу
-     * @param destinationPath путь к файлу для сохранения зашифрованного текста
-     * @param key ключ шифрования
-     */
-    public static void encryptVigenere(String sourcePath, String destinationPath, String key) {
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath)); BufferedWriter writer = new BufferedWriter(new FileWriter(destinationPath))) {
-
-            StringBuilder encryptedText = new StringBuilder();
-            String line;
-            int keyIndex = 0;
-
-            while ((line = reader.readLine()) != null) {
-                for (char c : line.toCharArray()) {
-                    if (Character.isLetter(c)) {
-                        char base = Character.isUpperCase(c) ? 'A' : 'a';
-                        char keyChar = key.charAt(keyIndex % key.length());
-                        int shift = Character.isUpperCase(keyChar) ? keyChar - 'A' : keyChar - 'a';
-                        char encryptedChar = (char) ((c - base + shift) % 26 + base);
-                        encryptedText.append(encryptedChar);
-
-                        keyIndex++;
-                    } else {
-                        encryptedText.append(c);
-                    }
-                }
-                encryptedText.append(System.lineSeparator());
-            }
-            writer.write(encryptedText.toString());
-            System.out.println("Текст успешно зашифрован и сохранен в " + destinationPath);
-
-        } catch (IOException ex) {
-            System.out.println("Ошибка при шифровании содержимого файла: " + ex.getMessage());
-        }
-    }
-
-    /**
-     * Расшифровывает содержимое файла с использованием шифра Виженера и
-     * сохраняет текст в новый файл. Если возникли ошибки при расшифровке,
-     * выводится соответствующее сообщение.
-     *
-     * @param sourcePath Путь к исходному файлу
-     * @param destinationPath Путь к файлу для сохранения расшифрованного текста
-     * @param key Ключ расшифровки
-     */
-    public static void decryptVigenere(String sourcePath, String destinationPath, String key) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath)); BufferedWriter writer = new BufferedWriter(new FileWriter(destinationPath))) {
-            StringBuilder decryptedText = new StringBuilder();
-            String line;
-            int keyIndex = 0;
-            while ((line = reader.readLine()) != null) {
-                for (char c : line.toCharArray()) {
-                    if (Character.isLetter(c)) {
-                        char base = Character.isUpperCase(c) ? 'A' : 'a';
-                        char keyChar = key.charAt(keyIndex % key.length());
-                        int shift = Character.isUpperCase(keyChar) ? keyChar - 'A' : keyChar - 'a';
-                        char decryptedChar = (char) ((c - base - shift + 26) % 26 + base);
-                        decryptedText.append(decryptedChar);
-                        keyIndex++;
-                    } else {
-                        decryptedText.append(c);
-                    }
-                }
-                decryptedText.append(System.lineSeparator());
-            }
-            writer.write(decryptedText.toString());
-            System.out.println("Текст успешно расшифрован и сохранен в " + destinationPath);
-        } catch (IOException ex) {
-            System.out.println("Ошибка при расшифровке содержимого файла: " + ex.getMessage());
-        }
-    }
-
-    /**
      * Считает слова в файле. Также проверяется, что слово содержит только
      * буквы, или слово только с одним знаком препинания в конце. Также
-     * подсчитывает слова, например: "квартира/дом" или "вот-вот". Если возникли
-     * ошибки при подсчете слов, выводится соответствующее сообщение.
+     * правильно подсчитывает слова через дефис, слэш, а также слова в скобках.
+     * Если возникла ошибка при подсчете слов, выводится соответствующее
+     * сообщение.
      *
      * @param sourcePath путь к файлу, слова в котором надо подсчитать
      */
@@ -306,16 +244,21 @@ class FileUtils {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                String[] words = line.split("\\s+");
 
-                for (String word : words) {
+                String[] parts = line.split("[/\\-]");
 
-                    if (word.isEmpty()) {
-                        continue;
-                    }
+                for (String part : parts) {
 
-                    if (word.matches("[a-zA-Zа-яА-Я]+([-/][a-zA-Zа-яА-Я]+)*[.,!?;:]?")) {
-                        wordCount++;
+                    String[] words = part.split("\\s+");
+
+                    for (String word : words) {
+                        if (word.isEmpty()) {
+                            continue;
+                        }
+
+                        if (word.matches("[a-zA-Zа-яА-ЯёЁ()]+[.,!?;:]?")) {
+                            wordCount++;
+                        }
                     }
                 }
             }
@@ -324,6 +267,87 @@ class FileUtils {
 
         } catch (IOException ex) {
             System.out.println("Ошибка при чтении файла: " + ex.getMessage());
+        }
+    }
+
+    /**
+     * Шифрует содержимое файла с использованием шифра Виженера и сохраняет
+     * результат в указанный файл.
+     *
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу для сохранения зашифрованного текста
+     * @param key ключ шифрования
+     * @param alphabet объект алфавита, используемый для шифрования
+     */
+    public static void encryptVigenere(String sourcePath, String destinationPath, String key, Alphabet alphabet) {
+        processVigenere(sourcePath, destinationPath, key, alphabet, true);
+    }
+
+    /**
+     * Расшифровывает содержимое файла с использованием шифра Виженера и
+     * сохраняет результат в указанный файл.
+     *
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу для сохранения расшифрованного текста
+     * @param key ключ расшифровки
+     * @param alphabet объект алфавита, используемый для расшифровки
+     */
+    public static void decryptVigenere(String sourcePath, String destinationPath, String key, Alphabet alphabet) {
+        processVigenere(sourcePath, destinationPath, key, alphabet, false);
+    }
+
+    /**
+     * Обрабатывает содержимое файла с использованием шифра Виженера и сохраняет
+     * результат в указанный файл. Может быть использован для шифрования или
+     * расшифровки в зависимости от флага isEncrypt. Если возникла ошибка при
+     * обработке файла, выводится соответствующее сообщение.
+     *
+     * @param sourcePath путь к исходному файлу
+     * @param destinationPath путь к файлу для сохранения результата
+     * @param key ключ шифрования или расшифровки
+     * @param alphabet объект алфавита, используемый для обработки текста
+     * @param isEncrypt флаг, определяющий шифрование (true) или расшифровку
+     * (false)
+     */
+    private static void processVigenere(String sourcePath, String destinationPath, String key, Alphabet alphabet, boolean isEncrypt) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(sourcePath)); BufferedWriter writer = new BufferedWriter(new FileWriter(destinationPath))) {
+
+            StringBuilder resultText = new StringBuilder();
+            String line;
+            int keyIndex = 0;
+
+            while ((line = reader.readLine()) != null) {
+                for (char c : line.toCharArray()) {
+                    if (Character.isLetter(c)) {
+                        boolean isUpperCase = Character.isUpperCase(c);
+                        int charIndex = alphabet.getShift(c);
+
+                        if (charIndex != -1) {
+                            char keyChar = key.charAt(keyIndex % key.length());
+                            int keyShift = alphabet.getShift(keyChar);
+
+                            if (keyShift != -1) {
+                                int shiftDirection = isEncrypt ? keyShift : -keyShift;
+                                int newIndex = (charIndex + shiftDirection + alphabet.getAlphabetSize()) % alphabet.getAlphabetSize();
+                                char newChar = alphabet.getCharAt(newIndex, isUpperCase);
+
+                                resultText.append(newChar);
+                                keyIndex++;
+                            }
+                        } else {
+                            resultText.append(c);
+                        }
+                    } else {
+                        resultText.append(c);
+                    }
+                }
+                resultText.append(System.lineSeparator());
+            }
+            writer.write(resultText.toString());
+            System.out.println((isEncrypt ? "Текст зашифрован" : "Текст расшифрован") + " и сохранен в " + destinationPath);
+
+        } catch (IOException ex) {
+            System.out.println("Ошибка при обработке файла: " + ex.getMessage());
         }
     }
 }
